@@ -138,6 +138,6 @@ fn main() {
         println!();
         game_grid = next_gen(&game_grid);
         i+=1;
-        sleep(time::Duration::from_secs(1));
+        sleep(time::Duration::from_millis(300));
     }
 }
