@@ -1,5 +1,6 @@
 use serde::Deserialize;
-use std::fs;
+use core::time;
+use std::{fs, thread::sleep};
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -66,9 +67,56 @@ fn print_game_grid(game_grid: &Vec<Vec<bool>>) {
     println!("+{}+", "-".repeat(width));
 }
 
+fn next_gen(grid: &Vec<Vec<bool>> ) -> Vec<Vec<bool>> {
+
+    let mut next: Vec<Vec<bool>> = vec![vec![false; 10]; 10];
+    let mut y: usize = 0;
+    let mut x: usize;
+    let mut alive: u8;
+
+    for row in grid {
+        x = 0;
+        y+=1;
+        for cell in row {
+            x+=1;
+            alive = 0;
+            if check(x-1, y-1, &grid) {alive+=1;}
+            if check(x-1, y, &grid) {alive+=1;}
+            if check(x-1, y+1, &grid) {alive+=1;}
+            if check(x, y-1, &grid) {alive+=1;}
+            if check(x, y+1, &grid) {alive+=1;}
+            if check(x+1, y-1, &grid) {alive+=1;}
+            if check(x+1, y, &grid.clone()) {alive+=1;}
+            if check(x+1, y+1, &grid) {alive+=1;}
+
+            if !cell && alive==3 {next[x-1][y-1]=true;}
+            if *cell && alive>1 && alive<4 {next[x-1][y-1]=true;}
+        }
+    }
+
+  return next;
+}
+
+fn check(mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> bool {
+
+    if y<1 {y=10;}
+    if y>10 {y=1;}
+    if x<1 {x=10;}
+    if x>10 {x=1;}
+
+    return grid[x-1][y-1];
+}
 
 fn main() {
-    let game_grid = init_field();
+    let mut game_grid = init_field();
 
-    print_game_grid(&game_grid);
+    loop {
+
+        print_game_grid(&game_grid);
+
+        game_grid = next_gen(&game_grid);
+
+        sleep(time::Duration::from_secs(1));
+        
+    }
 }
