@@ -130,10 +130,14 @@ fn check(mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> bool {
 
 fn main() {
     let mut game_grid = init_field();
-
+    let mut i = 1;
     loop {
         print_game_grid(&game_grid);
+        print!("Generation: ");
+        print!("{}",i);
+        println!();
         game_grid = next_gen(&game_grid);
-        sleep(time::Duration::from_secs(1));
+        i+=1;
+        sleep(time::Duration::from_millis(300));
     }
 }
