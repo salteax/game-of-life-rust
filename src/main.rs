@@ -134,9 +134,10 @@ fn main() {
     loop {
         print_game_grid(&game_grid);
         print!("Generation: ");
-        print!(i);
+        print!("{}",i);
         println!();
         game_grid = next_gen(&game_grid);
+        i+=1;
         sleep(time::Duration::from_secs(1));
     }
 }
