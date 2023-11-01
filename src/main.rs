@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use core::time;
 use std::{fs, thread::sleep};
+use lazy_static::lazy_static;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -14,11 +15,19 @@ struct GridSize {
     height: usize,
 }
 
-fn init_field() -> Vec<Vec<bool> > {
-    // Config-Datei einlesen
+lazy_static! {
+    static ref CONFIG: Config = load_config();
+}
+
+fn load_config() -> Config {
     let toml_str = fs::read_to_string("config.toml").expect("Failed to read config.toml file");
-    let config: Config = toml::from_str(&toml_str).expect("Failed to deserialize config.toml");
-    
+    toml::from_str(&toml_str).expect("Failed to deserialize config.toml")
+}
+
+fn init_field() -> Vec<Vec<bool> > {
+    // Config
+    let config = &*CONFIG;
+
     // game_grid aus grid_size initialisieren, bool 2D array mit toten Zellen
     let mut game_grid: Vec<Vec<bool>> = vec![vec![false; config.grid_size.width]; config.grid_size.height];
 
@@ -67,9 +76,11 @@ fn print_game_grid(game_grid: &Vec<Vec<bool>>) {
     println!("+{}+", "-".repeat(width));
 }
 
-fn next_gen(grid: &Vec<Vec<bool>> ) -> Vec<Vec<bool>> {
+fn next_gen(grid: &Vec<Vec<bool>>) -> Vec<Vec<bool>> {
+    // Config
+    let config = &*CONFIG;
 
-    let mut next: Vec<Vec<bool>> = vec![vec![false; 10]; 10];
+    let mut next: Vec<Vec<bool>> = vec![vec![false; config.grid_size.width]; config.grid_size.height];
     let mut y: usize = 0;
     let mut x: usize;
     let mut alive: u8;
@@ -98,11 +109,13 @@ fn next_gen(grid: &Vec<Vec<bool>> ) -> Vec<Vec<bool>> {
 }
 
 fn check(mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> bool {
+    // Config
+    let config = &*CONFIG;
 
-    if y<1 {y=10;}
-    if y>10 {y=1;}
-    if x<1 {x=10;}
-    if x>10 {x=1;}
+    if y<1 {y=config.grid_size.height;}
+    if y>config.grid_size.height {y=1;}
+    if x<1 {x=config.grid_size.width;}
+    if x>config.grid_size.width {x=1;}
 
     return grid[x-1][y-1];
 }
@@ -111,12 +124,8 @@ fn main() {
     let mut game_grid = init_field();
 
     loop {
-
         print_game_grid(&game_grid);
-
         game_grid = next_gen(&game_grid);
-
         sleep(time::Duration::from_secs(1));
-        
     }
 }

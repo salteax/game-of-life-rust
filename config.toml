@@ -5,5 +5,5 @@ initial_cells = [
 ]
 
 [grid_size]
-width = 10
-height = 10
+width = 20
+height = 20
