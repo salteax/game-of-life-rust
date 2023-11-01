@@ -37,16 +37,33 @@ fn init_field() -> Vec<Vec<bool> > {
 }
 
 fn print_game_grid(game_grid: &Vec<Vec<bool>>) {
+    // Screen leeren und Cursor auf Position 1 1
+    print!("\x1B[2J\x1b[1;1H");
+    
+    // Farben
+    let alive_color = "\x1B[32m";
+    let dead_color = "\x1B[31m";
+    let reset_color = "\x1B[0m";
+
+    // Zeichne oberer Rahmen
+    let width = game_grid[0].len() * 2;
+    println!("+{}+", "-".repeat(width));
+
+    // Grid ausgeben
     for row in game_grid {
+        print!("|");
         for &cell in row {
             if cell {
-                print!("X ");
+                print!("{}x{} ", alive_color, reset_color);
             } else {
-                print!(". ");
+                print!("{}.{} ", dead_color, reset_color);
             }
         }
-        println!();
+        println!("|");
     }
+
+    // Zeichne unterer Rahmen
+    println!("+{}+", "-".repeat(width));
 }
 
 
