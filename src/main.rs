@@ -86,11 +86,19 @@ fn next_gen(grid: &Vec<Vec<bool>> ) -> Vec<Vec<bool>> {
             if check(x, y-1, &grid) {alive+=1;}
             if check(x, y+1, &grid) {alive+=1;}
             if check(x+1, y-1, &grid) {alive+=1;}
-            if check(x+1, y, &grid.clone()) {alive+=1;}
+            if check(x+1, y, &grid) {alive+=1;}
             if check(x+1, y+1, &grid) {alive+=1;}
 
-            if !cell && alive==3 {next[x-1][y-1]=true;}
-            if *cell && alive>1 && alive<4 {next[x-1][y-1]=true;}
+            if !*cell && alive==3 {next[y-1][x-1]=true;}
+            if *cell && alive>1 && alive<4 {next[y-1][x-1]=true;}
+
+            
+            /*print!("{}",x);
+            print!(" ");
+            print!("{}",y);
+            print!(" ");
+            print!("{}",alive);
+            println!();*/
         }
     }
 
@@ -104,7 +112,7 @@ fn check(mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> bool {
     if x<1 {x=10;}
     if x>10 {x=1;}
 
-    return grid[x-1][y-1];
+    return grid[y-1][x-1];
 }
 
 fn main() {
