@@ -35,10 +35,6 @@ enum InterfaceType {
     Console,
 }
 
-fn default_interface() -> InterfaceType {
-    InterfaceType::Gui
-}
-
 lazy_static! {
     static ref CONFIG: Config = load_config();
 }
@@ -232,10 +228,8 @@ fn run_gol_console(game_grid: Vec<Vec<bool>>, mut i: i32) -> i32 {
     print!("Generation: ");
     print!("{}", i);
     println!();
-    i += 1;
-    sleep(time::Duration::from_millis(300));
-
-    i
+    
+    i + 1
 }
 
 fn main() {
@@ -253,13 +247,12 @@ fn main() {
         match config.interface {
             InterfaceType::Gui => {
                 run_gol_gui(&mut window, &mut app, updated_game_grid.clone());
-                sleep(time::Duration::from_millis(300));
             }
             InterfaceType::Console => {
                 i = run_gol_console(updated_game_grid.clone(), i);
             }
         }
         game_grid = updated_game_grid;
+        sleep(time::Duration::from_millis(300));
     }
-    
 }
