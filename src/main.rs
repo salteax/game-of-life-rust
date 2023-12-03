@@ -13,8 +13,11 @@ use piston::window::WindowSettings;
 // Rest
 use serde::Deserialize;
 use core::time;
+use std::time::Instant;
 use std::{fs, thread::sleep};
 use lazy_static::lazy_static;
+
+mod backend;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -24,7 +27,7 @@ struct Config {
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct GridSize {
+pub struct GridSize {
     width: usize,
     height: usize,
 }
@@ -96,50 +99,6 @@ fn print_game_grid(game_grid: &Vec<Vec<bool>>) {
     println!("+{}+", "-".repeat(width));
 }
 
-fn next_gen(grid: &Vec<Vec<bool>>) -> Vec<Vec<bool>> {
-    // Config
-    let config = &*CONFIG;
-
-    let mut next: Vec<Vec<bool>> = vec![vec![false; config.grid_size.width]; config.grid_size.height];
-    let mut y: usize = 0;
-    let mut x: usize;
-    let mut alive: u8;
-
-    for row in grid {
-        x = 0;
-        y+=1;
-        for cell in row {
-            x+=1;
-            alive = 0;
-            if check(x-1, y-1, &grid) {alive+=1;}
-            if check(x-1, y, &grid) {alive+=1;}
-            if check(x-1, y+1, &grid) {alive+=1;}
-            if check(x, y-1, &grid) {alive+=1;}
-            if check(x, y+1, &grid) {alive+=1;}
-            if check(x+1, y-1, &grid) {alive+=1;}
-            if check(x+1, y, &grid) {alive+=1;}
-            if check(x+1, y+1, &grid) {alive+=1;}
-
-            if !*cell && alive==3 {next[y-1][x-1]=true;}
-            if *cell && alive>1 && alive<4 {next[y-1][x-1]=true;}
-        }
-    }
-
-  return next;
-}
-
-fn check(mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> bool {
-    // Config
-    let config = &*CONFIG;
-
-    if y<1 {y=config.grid_size.height;}
-    if y>config.grid_size.height {y=1;}
-    if x<1 {x=config.grid_size.width;}
-    if x>config.grid_size.width {x=1;}
-
-    return grid[y-1][x-1];
-}
-
 pub struct Game {
     gl: GlGraphics,
 }
@@ -201,7 +160,7 @@ fn init_gui(config: &Config) -> (Window, Game) {
     (window, app)
 }
 
-fn run_gol_gui(window: &mut Window, app: &mut Game, game_grid: Vec<Vec<bool>>) {
+fn run_gol_gui(window: &mut Window, app: &mut Game, game_grid: &Vec<Vec<bool>>) {
     let event_settings = EventSettings {
         max_fps: 60,
         ups: 1,
@@ -217,42 +176,52 @@ fn run_gol_gui(window: &mut Window, app: &mut Game, game_grid: Vec<Vec<bool>>) {
             app.render(&args, &game_grid);
         }
 
-        if let Some(args) = e.update_args() {
+        if let Some(_args) = e.update_args() {
             break;
         }
     }
 }
 
-fn run_gol_console(game_grid: Vec<Vec<bool>>, mut i: i32) -> i32 {
+fn run_gol_console(game_grid: &Vec<Vec<bool>>, i: i32) {
     print_game_grid(&game_grid);
     print!("Generation: ");
     print!("{}", i);
     println!();
-    
-    i + 1
 }
 
 fn main() {
     // Gamegrid init
     let mut game_grid = init_field();
+    let mut alive_list: Vec<(usize, usize)> = vec![(0,0); 0];
     
     // Create a Glutin window.
     let config = &*CONFIG;
+    let (mut window,mut app) = init_gui(config);
 
-    let (mut window, mut app) = init_gui(config);
+    /* 
+    match config.interface {
+        InterfaceType::Gui => { (window, app) = init_gui(config); }
+        InterfaceType::Console => {}
+    }*/
 
     let mut i = 1;
+    let start = Instant::now();
     loop {
-        let updated_game_grid = next_gen(&game_grid);
+        (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size);
+
         match config.interface {
             InterfaceType::Gui => {
-                run_gol_gui(&mut window, &mut app, updated_game_grid.clone());
+                run_gol_gui(&mut window, &mut app, &game_grid);
             }
             InterfaceType::Console => {
-                i = run_gol_console(updated_game_grid.clone(), i);
+                run_gol_console(&game_grid, i);
             }
         }
-        game_grid = updated_game_grid;
+
+        if i==100000 {break;}
+        i += 1;
         sleep(time::Duration::from_millis(300));
     }
+    let duration = start.elapsed();
+    println!("Time for 100.000 Generations: {:?}", duration);
 }
