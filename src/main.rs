@@ -189,9 +189,56 @@ impl Game {
     }
 }
 
-fn main() {
+fn run_game_of_life_gui(config: &Config) {
     let opengl = OpenGL::V3_2;
 
+    let mut window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
+        .graphics_api(opengl)
+        .exit_on_esc(true)
+        .build()
+        .unwrap();
+
+    let mut app = Game {
+        gl: GlGraphics::new(opengl),
+    };
+
+    let event_settings = EventSettings {
+        max_fps: 60,
+        ups: 1,
+        ups_reset: 100,
+        swap_buffers: true,
+        bench_mode: false,
+        lazy: false,
+    };
+
+    let mut events = Events::new(event_settings);
+    let mut game_grid = init_field();
+    while let Some(e) = events.next(&mut window) {
+        if let Some(args) = e.render_args() {
+            app.render(&args, &game_grid);
+        }
+
+        if let Some(args) = e.update_args() {
+            game_grid = next_gen(&game_grid);
+        }
+    }
+}
+
+fn run_game_of_life_console() {
+    let mut game_grid = init_field();
+    let mut i = 1;
+    loop {
+        print_game_grid(&game_grid);
+        print!("Generation: ");
+        print!("{}", i);
+        println!();
+        game_grid = next_gen(&game_grid);
+        i += 1;
+        sleep(time::Duration::from_millis(300));
+    }
+}
+
+fn main() {
     // Gamegrid init
     let mut game_grid = init_field();
     
@@ -199,41 +246,7 @@ fn main() {
     let config = &*CONFIG;
 
     match config.interface {
-        InterfaceType::Gui => {
-            let mut window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
-                .graphics_api(opengl)
-                .exit_on_esc(true)
-                .build()
-                .unwrap();
-
-            let mut app = Game{
-                gl: GlGraphics::new(opengl),
-            };
-
-            let mut events = Events::new(EventSettings::new());
-            while let Some(e) = events.next(&mut window) {
-                if let Some(args) = e.render_args() {
-                    app.render(&args, &game_grid);
-                }
-
-                if let Some(args) = e.update_args() {
-                    game_grid = next_gen(&game_grid);
-                    sleep(time::Duration::from_millis(150));
-                }
-            }
-        },
-        InterfaceType::Console => {
-            let mut game_grid = init_field();
-            let mut i = 1;
-            loop {
-                print_game_grid(&game_grid);
-                print!("Generation: ");
-                print!("{}",i);
-                println!();
-                game_grid = next_gen(&game_grid);
-                i+=1;
-                sleep(time::Duration::from_millis(300));
-            }
-        },
+        InterfaceType::Gui => run_game_of_life_gui(config),
+        InterfaceType::Console => run_game_of_life_console(),
     }
 }
