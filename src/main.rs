@@ -20,12 +20,23 @@ use lazy_static::lazy_static;
 struct Config {
     initial_cells: Vec<Vec<i32>>,
     grid_size: GridSize,
+    interface: InterfaceType,
 }
 
 #[derive(Debug, serde::Deserialize)]
 struct GridSize {
     width: usize,
     height: usize,
+}
+
+#[derive(Debug, Deserialize)]
+enum InterfaceType {
+    Gui,
+    Console,
+}
+
+fn default_interface() -> InterfaceType {
+    InterfaceType::Gui
 }
 
 lazy_static! {
@@ -57,6 +68,36 @@ fn init_field() -> Vec<Vec<bool> > {
     }
 
     game_grid
+}
+
+fn print_game_grid(game_grid: &Vec<Vec<bool>>) {
+    // Screen leeren und Cursor auf Position 1 1
+    print!("\x1B[2J\x1b[1;1H");
+
+    // Farben
+    let alive_color = "\x1B[32m";
+    let dead_color = "\x1B[31m";
+    let reset_color = "\x1B[0m";
+
+    // Zeichne oberer Rahmen
+    let width = game_grid[0].len() * 2;
+    println!("+{}+", "-".repeat(width));
+
+    // Grid ausgeben
+    for row in game_grid {
+        print!("|");
+        for &cell in row {
+            if cell {
+                print!("{}x{} ", alive_color, reset_color);
+            } else {
+                print!("{}.{} ", dead_color, reset_color);
+            }
+        }
+        println!("|");
+    }
+
+    // Zeichne unterer Rahmen
+    println!("+{}+", "-".repeat(width));
 }
 
 fn next_gen(grid: &Vec<Vec<bool>>) -> Vec<Vec<bool>> {
@@ -157,25 +198,42 @@ fn main() {
     // Create a Glutin window.
     let config = &*CONFIG;
 
-    let mut window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
-        .graphics_api(opengl)
-        .exit_on_esc(true)
-        .build()
-        .unwrap();
+    match config.interface {
+        InterfaceType::Gui => {
+            let mut window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
+                .graphics_api(opengl)
+                .exit_on_esc(true)
+                .build()
+                .unwrap();
 
-    let mut app = Game{
-        gl: GlGraphics::new(opengl),
-    };
+            let mut app = Game{
+                gl: GlGraphics::new(opengl),
+            };
 
-    let mut events = Events::new(EventSettings::new());
-    while let Some(e) = events.next(&mut window) {
-        if let Some(args) = e.render_args() {
-            app.render(&args, &game_grid);
-        }
+            let mut events = Events::new(EventSettings::new());
+            while let Some(e) = events.next(&mut window) {
+                if let Some(args) = e.render_args() {
+                    app.render(&args, &game_grid);
+                }
 
-        if let Some(args) = e.update_args() {
-            game_grid = next_gen(&game_grid);
-            sleep(time::Duration::from_millis(150));
-        }
+                if let Some(args) = e.update_args() {
+                    game_grid = next_gen(&game_grid);
+                    sleep(time::Duration::from_millis(150));
+                }
+            }
+        },
+        InterfaceType::Console => {
+            let mut game_grid = init_field();
+            let mut i = 1;
+            loop {
+                print_game_grid(&game_grid);
+                print!("Generation: ");
+                print!("{}",i);
+                println!();
+                game_grid = next_gen(&game_grid);
+                i+=1;
+                sleep(time::Duration::from_millis(300));
+            }
+        },
     }
 }
