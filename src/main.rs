@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use core::time;
-use std::{fs, thread::sleep, result};
+use std::{fs, thread::sleep, time::Instant};
 use lazy_static::lazy_static;
 
 #[derive(Debug, Deserialize)]
@@ -86,7 +86,7 @@ fn next_gen(grid: &Vec<Vec<bool>>, alive_list: &Vec<(usize, usize)>) -> (Vec<Vec
     let mut x: usize;
     let mut alive_count: u8;
 
-    if alive_list_new.len()==0 {
+    if alive_list.len()==0 {
         for row in grid {
             x = 0;
             y+=1;
@@ -119,23 +119,66 @@ fn next_gen(grid: &Vec<Vec<bool>>, alive_list: &Vec<(usize, usize)>) -> (Vec<Vec
             y = cell.0 +1;
             x = cell.1 +1;
 
-            alive_count = 0;
-            if check(x-1, y-1, &grid) {alive_count+=1;}
-            if check(x-1, y, &grid) {alive_count+=1;}
-            if check(x-1, y+1, &grid) {alive_count+=1;}
-            if check(x, y-1, &grid) {alive_count+=1;}
-            if check(x, y+1, &grid) {alive_count+=1;}
-            if check(x+1, y-1, &grid) {alive_count+=1;}
-            if check(x+1, y, &grid) {alive_count+=1;}
-            if check(x+1, y+1, &grid) {alive_count+=1;}
+            let r = check_area(x, y, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
 
-            if alive_count==3 {next[y-1][x-1]=true; alive_list_new.push((y-1,x-1));}
-            if alive_count>1 && alive_count<4 {next[y-1][x-1]=true; alive_list_new.push((y-1,x-1));}
+            let r = check_area(x-1, y-1, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+
+            let r = check_area(x-1, y, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+
+            let r = check_area(x-1, y+1, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+            
+            let r = check_area(x, y-1, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+            
+            let r = check_area(x, y+1, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+            
+            let r = check_area(x+1, y-1, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+            
+            let r = check_area(x+1, y, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+            
+            let r = check_area(x+1, y+1, &grid);
+            if r.0 {next[r.1-1][r.2-1]=true; alive_list_new.push((r.1-1, r.2-1));}
+
+            alive_list_new.sort();
+            alive_list_new.dedup();
         }
     }
     
 
   return (next, alive_list_new);
+}
+
+fn check_area (mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> (bool, usize, usize) {
+
+    let config = &*CONFIG;
+
+    if y<1 {y=config.grid_size.height;}
+    if y>config.grid_size.height {y=1;}
+    if x<1 {x=config.grid_size.width;}
+    if x>config.grid_size.width {x=1;}
+
+    let cell = grid[y-1][x-1];
+    let mut alive_count = 0;
+
+    if check(x-1, y-1, &grid) {alive_count+=1;}
+    if check(x-1, y, &grid) {alive_count+=1;}
+    if check(x-1, y+1, &grid) {alive_count+=1;}
+    if check(x, y-1, &grid) {alive_count+=1;}
+    if check(x, y+1, &grid) {alive_count+=1;}
+    if check(x+1, y-1, &grid) {alive_count+=1;}
+    if check(x+1, y, &grid) {alive_count+=1;}
+    if check(x+1, y+1, &grid) {alive_count+=1;}
+
+    if !cell && alive_count==3 {return (true, y, x);}
+    if cell && alive_count>1 && alive_count<4 {return (true, y, x);}       
+    return (false, 0, 0);
 }
 
 fn check(mut x: usize, mut y: usize, grid: &Vec<Vec<bool>>) -> bool {
@@ -154,13 +197,16 @@ fn main() {
     let mut game_grid = init_field();
     let mut alive_list: Vec<(usize, usize)> = vec![(0,0); 0];
     let mut i = 1;
+
+    let start = Instant::now();
     loop {
         print_game_grid(&game_grid);
         print!("Generation: ");
         print!("{}",i);
         println!();
+        if i==100000 {break;}
 
-        /*
+        /* 
         for cell in &alive_list {
             println!("{}, {}",cell.0,cell.1);
         }
@@ -170,6 +216,8 @@ fn main() {
         game_grid = result.0;
         alive_list = result.1;
         i+=1;
-        sleep(time::Duration::from_millis(300));
+        //sleep(time::Duration::from_millis(300));
     }
+    let duration = start.elapsed();
+    println!("Time for 100.000 Generations: {:?}", duration);
 }
