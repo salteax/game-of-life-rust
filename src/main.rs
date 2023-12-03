@@ -216,7 +216,7 @@ fn main() {
         game_grid = result.0;
         alive_list = result.1;
         i+=1;
-        //sleep(time::Duration::from_millis(300));
+        sleep(time::Duration::from_millis(300));
     }
     let duration = start.elapsed();
     println!("Time for 100.000 Generations: {:?}", duration);
