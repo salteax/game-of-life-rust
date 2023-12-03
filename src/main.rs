@@ -206,11 +206,7 @@ fn main() {
         println!();
         if i==100000 {break;}
 
-        /* 
-        for cell in &alive_list {
-            println!("{}, {}",cell.0,cell.1);
-        }
-        */
+        //for cell in &alive_list {println!("{}, {}",cell.0,cell.1);}
 
         let result = next_gen(&game_grid, &alive_list);
         game_grid = result.0;
