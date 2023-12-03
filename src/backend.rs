@@ -26,14 +26,6 @@ pub fn next_gen(grid: &Vec<Vec<bool>>, alive_list: &Vec<(usize, usize)>, grid_si
     
                 if !*cell && alive_count==3 {next[y-1][x-1]=true; alive_list_new.push((y-1,x-1));}
                 if *cell && alive_count>1 && alive_count<4 {next[y-1][x-1]=true; alive_list_new.push((y-1,x-1));}
-    
-                
-                /*print!("{}",x);
-                print!(" ");
-                print!("{}",y);
-                print!(" ");
-                print!("{}",alive);
-                println!();*/
             }
         }
     } else {
