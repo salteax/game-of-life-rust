@@ -19,7 +19,6 @@ initial_cells = [
     #[9, 8],
     #[9, 9],
     
-    
     # Gleiter
     #[1, 2],
     #[2, 3],
@@ -40,5 +39,5 @@ initial_cells = [
 ]
 
 [grid_size]
-width = 15
-height = 15
+width = 30
+height = 30
