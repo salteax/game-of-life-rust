@@ -189,19 +189,23 @@ impl Game {
     }
 }
 
-fn run_game_of_life_gui(config: &Config) {
+fn init_gui(config: &Config) -> (Window, Game) {
     let opengl = OpenGL::V3_2;
 
-    let mut window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
+    let window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
         .graphics_api(opengl)
         .exit_on_esc(true)
         .build()
         .unwrap();
 
-    let mut app = Game {
+    let app = Game {
         gl: GlGraphics::new(opengl),
     };
 
+    (window, app)
+}
+
+fn run_gol_gui(window: &mut Window, app: &mut Game, game_grid: Vec<Vec<bool>>) {
     let event_settings = EventSettings {
         max_fps: 60,
         ups: 1,
@@ -212,30 +216,26 @@ fn run_game_of_life_gui(config: &Config) {
     };
 
     let mut events = Events::new(event_settings);
-    let mut game_grid = init_field();
-    while let Some(e) = events.next(&mut window) {
+    while let Some(e) = events.next(window) {
         if let Some(args) = e.render_args() {
             app.render(&args, &game_grid);
         }
 
         if let Some(args) = e.update_args() {
-            game_grid = next_gen(&game_grid);
+            break;
         }
     }
 }
 
-fn run_game_of_life_console() {
-    let mut game_grid = init_field();
-    let mut i = 1;
-    loop {
-        print_game_grid(&game_grid);
-        print!("Generation: ");
-        print!("{}", i);
-        println!();
-        game_grid = next_gen(&game_grid);
-        i += 1;
-        sleep(time::Duration::from_millis(300));
-    }
+fn run_gol_console(game_grid: Vec<Vec<bool>>, mut i: i32) -> i32 {
+    print_game_grid(&game_grid);
+    print!("Generation: ");
+    print!("{}", i);
+    println!();
+    i += 1;
+    sleep(time::Duration::from_millis(300));
+
+    i
 }
 
 fn main() {
@@ -245,8 +245,21 @@ fn main() {
     // Create a Glutin window.
     let config = &*CONFIG;
 
-    match config.interface {
-        InterfaceType::Gui => run_game_of_life_gui(config),
-        InterfaceType::Console => run_game_of_life_console(),
+    let (mut window, mut app) = init_gui(config);
+
+    let mut i = 1;
+    loop {
+        let updated_game_grid = next_gen(&game_grid);
+        match config.interface {
+            InterfaceType::Gui => {
+                run_gol_gui(&mut window, &mut app, updated_game_grid.clone());
+                sleep(time::Duration::from_millis(300));
+            }
+            InterfaceType::Console => {
+                i = run_gol_console(updated_game_grid.clone(), i);
+            }
+        }
+        game_grid = updated_game_grid;
     }
+    
 }
