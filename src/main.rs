@@ -4,11 +4,11 @@ extern crate opengl_graphics;
 extern crate piston;
 
 // Piston
-use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateEvent};
 use piston::window::WindowSettings;
+use piston_window::*;
 
 // Rest
 use serde::Deserialize;
@@ -21,9 +21,11 @@ mod backend;
 
 #[derive(Debug, Deserialize)]
 struct Config {
+    interface: InterfaceType,
+    max_fps: u64,
+    ups: u64,
     initial_cells: Vec<Vec<i32>>,
     grid_size: GridSize,
-    interface: InterfaceType,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -103,6 +105,7 @@ fn print_game_grid(game_grid: &Vec<Vec<bool>>) {
 
 pub struct Game {
     gl: GlGraphics,
+    is_paused: bool,
 }
 
 impl Game {
@@ -146,26 +149,30 @@ impl Game {
     }
 }
 
-fn init_gui(config: &Config) -> (Window, Game) {
+fn init_gui(config: &Config) -> (PistonWindow, Game) {
     let opengl = OpenGL::V3_2;
 
-    let window: Window = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
+    let window: PistonWindow = WindowSettings::new::<&str, (u32, u32)>("Game of Life", (config.grid_size.width as u32 * 25, config.grid_size.height as u32 * 25).into())
         .graphics_api(opengl)
         .exit_on_esc(true)
         .build()
         .unwrap();
 
+
     let app = Game {
         gl: GlGraphics::new(opengl),
+        is_paused: false,
     };
 
     (window, app)
 }
 
-fn run_gol_gui(window: &mut Window, app: &mut Game, game_grid: &Vec<Vec<bool>>) {
+async fn run_gol_gui(window: &mut PistonWindow, app: &mut Game, game_grid: &mut Vec<Vec<bool>>, alive_list: &mut Vec<(usize, usize)>) {
+    let config = &*CONFIG;
+    
     let event_settings = EventSettings {
-        max_fps: 60,
-        ups: 1,
+        max_fps: config.max_fps,
+        ups: config.ups,
         ups_reset: 100,
         swap_buffers: true,
         bench_mode: false,
@@ -173,13 +180,28 @@ fn run_gol_gui(window: &mut Window, app: &mut Game, game_grid: &Vec<Vec<bool>>) 
     };
 
     let mut events = Events::new(event_settings);
+    let mut i = 0;
+    let title = format!("Game of Life | fps: {}, ups: {}", config.max_fps, config.ups);
+
     while let Some(e) = events.next(window) {
         if let Some(args) = e.render_args() {
             app.render(&args, &game_grid);
         }
 
-        if let Some(_args) = e.update_args() {
-            break;
+        if !app.is_paused {
+            if let Some(_args) = e.update_args() {
+                window.events.set_ups(1000);
+                i += 1;
+                (*game_grid, *alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
+
+                
+                window.set_title(format!("{} | generation: {}, alive: {}, dead: {}", title, i, alive_list.len(), ((config.grid_size.width * config.grid_size.height)-alive_list.len())));
+            }
+        }
+
+        if let Some(Button::Keyboard(Key::Space)) = e.press_args() {
+            app.is_paused = !app.is_paused;
+            window.set_title(format!("{} | generation: {}, alive: {}, dead: {} [PAUSED]", title, i, alive_list.len(), ((config.grid_size.width * config.grid_size.height)-alive_list.len())));
         }
     }
 }
@@ -204,13 +226,11 @@ async fn main() {
 
     match config.interface {
         InterfaceType::Gui => {
-            // Create a Glutin window.
+            // Create a window.
             let config = &*CONFIG;
-            let (mut window,mut app) = init_gui(config);
-            loop{
-                (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
-                run_gol_gui(&mut window, &mut app, &game_grid);
-            }
+            let (mut window, mut app) = init_gui(config);
+
+            run_gol_gui(&mut window, &mut app, &mut game_grid, &mut alive_list).await;
         }
         InterfaceType::Console => {
             loop {

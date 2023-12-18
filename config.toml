@@ -1,4 +1,7 @@
-interface = "SuperSpeed"
+interface = "Gui"
+
+max_fps = 60
+ups = 10
 
 initial_cells = [
     # Blinker
