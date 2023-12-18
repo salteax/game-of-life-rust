@@ -36,6 +36,8 @@ pub struct GridSize {
 enum InterfaceType {
     Gui,
     Console,
+    Speed,
+    SuperSpeed
 }
 
 lazy_static! {
@@ -189,39 +191,56 @@ fn run_gol_console(game_grid: &Vec<Vec<bool>>, i: i32) {
     println!();
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Gamegrid init
     let mut game_grid = init_field();
     let mut alive_list: Vec<(usize, usize)> = vec![(0,0); 0];
-    
-    // Create a Glutin window.
-    let config = &*CONFIG;
-    let (mut window,mut app) = init_gui(config);
 
-    /* 
-    match config.interface {
-        InterfaceType::Gui => { (window, app) = init_gui(config); }
-        InterfaceType::Console => {}
-    }*/
+    let config = &*CONFIG;
 
     let mut i = 1;
     let start = Instant::now();
-    loop {
-        (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size);
 
-        match config.interface {
-            InterfaceType::Gui => {
+    match config.interface {
+        InterfaceType::Gui => {
+            // Create a Glutin window.
+            let config = &*CONFIG;
+            let (mut window,mut app) = init_gui(config);
+            loop{
+                (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
                 run_gol_gui(&mut window, &mut app, &game_grid);
             }
-            InterfaceType::Console => {
+        }
+        InterfaceType::Console => {
+            loop {
+                (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
                 run_gol_console(&game_grid, i);
+                if i==100000 {break;}
+                i += 1;
+                sleep(time::Duration::from_millis(300));
             }
         }
-
-        if i==100000 {break;}
-        i += 1;
-        sleep(time::Duration::from_millis(300));
+        InterfaceType::Speed => {
+            loop {
+                (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
+                if i==100000 {break;}
+                i += 1;
+                print!("Generation: ");
+                print!("{}", i);
+                println!();
+            }
+        }
+        InterfaceType::SuperSpeed => {
+            loop {
+                (game_grid, alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
+                if i==100000 {break;}
+                i += 1;
+            }
+            //run_gol_console(&game_grid, i);
+        }
     }
+
     let duration = start.elapsed();
     println!("Time for 100.000 Generations: {:?}", duration);
 }

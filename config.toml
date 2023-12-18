@@ -1,4 +1,4 @@
-interface = "Gui"
+interface = "SuperSpeed"
 
 initial_cells = [
     # Blinker
