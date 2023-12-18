@@ -120,6 +120,7 @@ impl Game {
         self.gl.draw(args.viewport(), |c, gl| {
             clear(DEAD_COLOR, gl);
 
+            // Zellen zeichnen
             for (i, row) in game_grid.iter().enumerate() {
                 for (j, &cell) in row.iter().enumerate() {
                     let color = if cell { ALIVE_COLOR } else { DEAD_COLOR };
@@ -136,6 +137,7 @@ impl Game {
 
             let transform = c.transform;
 
+            // Grid zeichnen
             for i in 0..game_grid.len() + 1 {
                 let y = (i as f64) * CELL_SIZE;
                 line(GRID_COLOR, 0.5, [0.0, y, args.window_size[0], y], transform, gl);
@@ -189,18 +191,22 @@ async fn run_gol_gui(window: &mut PistonWindow, app: &mut Game, game_grid: &mut 
         }
 
         if !app.is_paused {
+            // Updaten
             if let Some(_args) = e.update_args() {
                 window.events.set_ups(1000);
                 i += 1;
                 (*game_grid, *alive_list) = backend::next_gen(&game_grid, &alive_list, &config.grid_size).await;
 
-                
+                // Status als window title
                 window.set_title(format!("{} | generation: {}, alive: {}, dead: {}", title, i, alive_list.len(), ((config.grid_size.width * config.grid_size.height)-alive_list.len())));
             }
         }
 
+        // Spiel pausieren
         if let Some(Button::Keyboard(Key::Space)) = e.press_args() {
             app.is_paused = !app.is_paused;
+
+            // Status als window title
             window.set_title(format!("{} | generation: {}, alive: {}, dead: {} [PAUSED]", title, i, alive_list.len(), ((config.grid_size.width * config.grid_size.height)-alive_list.len())));
         }
     }
@@ -229,7 +235,8 @@ async fn main() {
             // Create a window.
             let config = &*CONFIG;
             let (mut window, mut app) = init_gui(config);
-
+            
+            // GUI zeichnen und updaten
             run_gol_gui(&mut window, &mut app, &mut game_grid, &mut alive_list).await;
         }
         InterfaceType::Console => {
