@@ -151,6 +151,7 @@ impl Game {
     }
 }
 
+// Gui initieren
 fn init_gui(config: &Config) -> (PistonWindow, Game) {
     let opengl = OpenGL::V3_2;
 
@@ -160,7 +161,6 @@ fn init_gui(config: &Config) -> (PistonWindow, Game) {
         .build()
         .unwrap();
 
-
     let app = Game {
         gl: GlGraphics::new(opengl),
         is_paused: false,
@@ -169,9 +169,11 @@ fn init_gui(config: &Config) -> (PistonWindow, Game) {
     (window, app)
 }
 
+// Gui Ausgabe
 async fn run_gol_gui(window: &mut PistonWindow, app: &mut Game, game_grid: &mut Vec<Vec<bool>>, alive_list: &mut Vec<(usize, usize)>) {
     let config = &*CONFIG;
     
+    // Gamesettings
     let event_settings = EventSettings {
         max_fps: config.max_fps,
         ups: config.ups,
@@ -191,7 +193,7 @@ async fn run_gol_gui(window: &mut PistonWindow, app: &mut Game, game_grid: &mut 
         }
 
         if !app.is_paused {
-            // Updaten
+            // Spielfeld Updaten
             if let Some(_args) = e.update_args() {
                 window.events.set_ups(1000);
                 i += 1;
@@ -202,16 +204,22 @@ async fn run_gol_gui(window: &mut PistonWindow, app: &mut Game, game_grid: &mut 
             }
         }
 
-        // Spiel pausieren
+        // Spiel pausieren, wenn 'Space' gedrückt wird
         if let Some(Button::Keyboard(Key::Space)) = e.press_args() {
             app.is_paused = !app.is_paused;
 
             // Status als window title
             window.set_title(format!("{} | generation: {}, alive: {}, dead: {} [PAUSED]", title, i, alive_list.len(), ((config.grid_size.width * config.grid_size.height)-alive_list.len())));
         }
+
+        // Spiel beenden, wenn 'q' gedrückt wird
+        if let Some(Button::Keyboard(Key::Q)) = e.press_args() {
+            break;
+        }
     }
 }
 
+// Konsoleausgabe
 fn run_gol_console(game_grid: &Vec<Vec<bool>>, i: i32) {
     print_game_grid(&game_grid);
     print!("Generation: ");
@@ -232,7 +240,7 @@ async fn main() {
 
     match config.interface {
         InterfaceType::Gui => {
-            // Create a window.
+            // Window erstellen
             let config = &*CONFIG;
             let (mut window, mut app) = init_gui(config);
             
