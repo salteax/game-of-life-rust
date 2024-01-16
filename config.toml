@@ -1,4 +1,7 @@
-interface = "Gui"
+ interface = "Gui"
+# interface = "Console"
+# interface = "Speed"
+# interface = "SuperSpeed"
 
 max_fps = 60
 ups = 10
